@@ -1,0 +1,34 @@
+taxonomy_vocabulary_list:
+  pattern: '/admin/structure/taxonomy'
+  defaults:
+    _entity_list: 'taxonomy_vocabulary'
+  requirements:
+    _permission: 'administer taxonomy'
+
+taxonomy_term_add:
+  pattern: '/admin/structure/taxonomy/manage/{taxonomy_vocabulary}/add'
+  defaults:
+    _content: '\Drupal\taxonomy\Controller\TaxonomyController::addForm'
+  requirements:
+    _access_taxonomy_term_create: 'taxonomy_term'
+
+taxonomy_term_delete:
+  pattern: '/taxonomy/term/{taxonomy_term}/delete'
+  defaults:
+    _entity_form: 'taxonomy_term.delete'
+  requirements:
+    _entity_access: 'taxonomy_term.delete'
+
+taxonomy_vocabulary_delete:
+  pattern: '/admin/structure/taxonomy/manage/{taxonomy_vocabulary}/delete'
+  defaults:
+    _entity_form: 'taxonomy_vocabulary.delete'
+  requirements:
+    _entity_access: 'taxonomy_vocabulary.delete'
+
+taxonomy_vocabulary_reset:
+  pattern: '/admin/structure/taxonomy/manage/{taxonomy_vocabulary}/reset'
+  defaults:
+    _entity_form: 'taxonomy_vocabulary.reset'
+  requirements:
+    _permission: 'administer taxonomy'

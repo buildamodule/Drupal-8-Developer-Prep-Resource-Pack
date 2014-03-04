@@ -1,0 +1,14 @@
+<?php
+/**
+ * @file
+ * Initial example of alter functions.
+ */
+ 
+/**
+ * Implements hook_page_alter().
+ *
+ * Adds text to the bottom of each page that says 'Hello, content!'
+ */
+function glue_page_alter(&$page) {
+  $page['content']['bartik.content']['content']['#markup'] = 'Hello, content!';
+}

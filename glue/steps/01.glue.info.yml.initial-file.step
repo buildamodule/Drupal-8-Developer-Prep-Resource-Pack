@@ -1,0 +1,5 @@
+name: Glue
+description: A module to demonstrate basic Drupal 8 integration.
+core: 8.x
+package: BuildAModule
+type: module

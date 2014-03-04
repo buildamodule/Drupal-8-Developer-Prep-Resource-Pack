@@ -1,0 +1,12 @@
+title: Two column
+category: Columns: 2
+template: two-col
+stylesheets:
+  - two-col.css
+regions:
+  left:
+    label: Left side
+    type: content
+  right:
+    label: Right side
+    type: aside

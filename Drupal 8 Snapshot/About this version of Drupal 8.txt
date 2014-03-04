@@ -1,0 +1,17 @@
+ABOUT THIS VERSION OF DRUPAL 8
+--------------------------------------------------------
+
+This is a snapshot of Drupal, taken from a Git repository on August 15, 2013, with a SHA of:
+
+SHA: 4e71065321723ace41ca0727fdb1a0c775895076
+
+This snapshot does not include Git data, but if you want the same snapshot that you can review in Git, you can use the following commands on the command line. If you need to install Git, there are instructions in the the Change Management and Version Control video collection for both Windows and Mac:
+
+> git clone --branch 8.x http://git.drupal.org/project/drupal.git
+> cd drupal
+> git checkout 4e71065321723ace41ca0727fdb1a0c775895076
+> git checkout -b drupal-8-developer-prep
+
+Drupal 8 does not currently provide an upgrade path to itself, which means that if you update the code base to a newer version of Drupal, it will not include update scripts to upgrade the database. So, if you upgrade your code base using Git, you will likely have to start with a new database.
+
+Additional instructions on checking out the Drupal core repository and applying patches can be found on https://drupal.org/project/drupal/git-instructions.

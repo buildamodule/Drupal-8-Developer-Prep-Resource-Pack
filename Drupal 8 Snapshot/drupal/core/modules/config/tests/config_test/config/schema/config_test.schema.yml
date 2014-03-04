@@ -1,0 +1,19 @@
+config_test.someschema:
+  type: mapping
+  label: "Schema test data"
+  mapping:
+    "testitem":
+      label: "Test item"
+    "testlist":
+      label: "Test list"
+
+config_test.someschema.somemodule.*.*:
+  type: mapping
+  label: 'Schema multiple filesytem marker test'
+  mapping:
+    id:
+      type: string
+      label: 'ID'
+    description:
+      type: text
+      label: 'Description'

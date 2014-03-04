@@ -1,0 +1,48 @@
+form_test.route1:
+  pattern: '/form-test/object-builder'
+  defaults:
+    _form: '\Drupal\form_test\FormTestObject'
+  requirements:
+    _access: 'TRUE'
+
+form_test.route2:
+  pattern: '/form-test/object-arguments-builder/{arg}'
+  defaults:
+    _form: '\Drupal\form_test\FormTestArgumentsObject'
+  requirements:
+    _access: 'TRUE'
+
+form_test.route3:
+  pattern: '/form-test/object-service-builder'
+  defaults:
+    _form: 'form_test.form.serviceForm'
+  requirements:
+    _access: 'TRUE'
+
+form_test.route4:
+  pattern: '/form-test/object-controller-builder'
+  defaults:
+    _form: '\Drupal\form_test\FormTestControllerObject'
+  requirements:
+    _access: 'TRUE'
+
+form_test.route5:
+  pattern: '/form-test/system-config-form'
+  defaults:
+    _form: '\Drupal\form_test\SystemConfigFormTestForm'
+  requirements:
+    _access: 'TRUE'
+
+form_test.route6:
+  pattern: '/form-test/confirm-form'
+  defaults:
+    _form: '\Drupal\form_test\ConfirmFormTestForm'
+  requirements:
+    _access: 'TRUE'
+
+form_test.route7:
+  pattern: '/form-test/confirm-form-array-path'
+  defaults:
+    _form: '\Drupal\form_test\ConfirmFormArrayPathTestForm'
+  requirements:
+    _access: 'TRUE'

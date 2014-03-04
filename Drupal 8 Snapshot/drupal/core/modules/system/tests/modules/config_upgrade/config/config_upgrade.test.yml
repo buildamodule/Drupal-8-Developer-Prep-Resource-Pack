@@ -1,0 +1,7 @@
+parent:
+  bar: Bar
+  baz: Baz
+foo: Foo
+numeric_keys:
+  403: ''
+  404: ''

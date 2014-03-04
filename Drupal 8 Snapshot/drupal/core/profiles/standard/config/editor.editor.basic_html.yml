@@ -1,0 +1,24 @@
+format: basic_html
+editor: ckeditor
+settings:
+  toolbar:
+    buttons:
+      -
+        - Bold
+        - Italic
+        - '|'
+        - DrupalLink
+        - DrupalUnlink
+        - '|'
+        - BulletedList
+        - NumberedList
+        - '|'
+        - Blockquote
+        - DrupalImage
+        - '|'
+        - Source
+  plugins:
+    stylescombo:
+      styles: ''
+status: '1'
+langcode: und

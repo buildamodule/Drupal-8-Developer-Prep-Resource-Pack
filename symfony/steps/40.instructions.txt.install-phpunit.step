@@ -1,0 +1,26 @@
+For Mac, installation is very easy (see http://phpunit.de/manual/current/en/installation.html)
+
+* Run "wget https://phar.phpunit.de/phpunit.phar" on the command line
+* Make the app executable with "chmod +x phpunit.phar"
+* Optionally move the application to your /usr/bin so it can execute from anywhere, with "mv phpunit.phar /usr/local/bin/phpunit"
+* If you moved it to /user/bin, you will use "phpunit" on the command line. Otherwise, you'll use "phpunit.phar"
+
+For Windows, installation is a bit more complicated, but still not too bad:
+
+* If you haven't yet, download and install PHP. I use http://windows.php.net/downloads/releases/php-5.3.28-nts-Win32-VC9-x86.msi in the videos.
+* Install Pear by doing the following:
+ - Open the following in your browser to download pear: http://pear.php.net/go-pear.phar
+ - Move the file into your PHP directory. Mine is located in "C:\Program Files\PHP"
+ - Open up the command line
+ - Navigate to your installer on the command line with something like "cd C:\Program Files\PHP"
+ - Type "php go-pear.phar"
+ - Move your pear.ini file to C:\Windows and change permissions on it to allow users to modify the file
+ - Run the following lines on the command line:
+ - pear channel-update pear.php.net
+ - pear upgrade-all
+ - pear channel-discover pear.phpunit.de
+ - pear channel-discover components.ez.no
+ - pear channel-discover pear.symfony-project.com
+ - pear update-channels
+ - pear install --alldeps --force phpunit/PHPUnit
+ - If you don't get an error when typing "phpunit -v" on the command line, then you're good to go!

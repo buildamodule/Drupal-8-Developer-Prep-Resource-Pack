@@ -1,0 +1,8 @@
+hello_world:
+  # In an update to Drupal 8, 'pattern' was replaced with 'path'.
+  # path: '/hello-world'
+  pattern: '/hello-world'
+  defaults: 
+    _content: '\Drupal\glue\Controller\GlueController::helloWorldPage'
+  requirements: 
+    _permission: 'access content'

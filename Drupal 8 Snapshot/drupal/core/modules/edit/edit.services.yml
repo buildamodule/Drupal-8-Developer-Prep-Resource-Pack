@@ -1,0 +1,18 @@
+services:
+  plugin.manager.edit.editor:
+    class: Drupal\edit\Plugin\InPlaceEditorManager
+    arguments: ['@container.namespaces']
+  access_check.edit.entity_field:
+    class: Drupal\edit\Access\EditEntityFieldAccessCheck
+    tags:
+      - { name: access_check }
+  access_check.edit.entity:
+    class: Drupal\edit\Access\EditEntityAccessCheck
+    tags:
+      - { name: access_check }
+  edit.editor.selector:
+    class: Drupal\edit\EditorSelector
+    arguments: ['@plugin.manager.edit.editor', '@plugin.manager.field.formatter']
+  edit.metadata.generator:
+    class: Drupal\edit\MetadataGenerator
+    arguments: ['@access_check.edit.entity_field', '@edit.editor.selector', '@plugin.manager.edit.editor']

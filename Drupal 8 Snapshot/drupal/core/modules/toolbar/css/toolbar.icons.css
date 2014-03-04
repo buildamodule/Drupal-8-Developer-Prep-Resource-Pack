@@ -1,0 +1,178 @@
+/**
+ * @file toolbar.icons.css
+ */
+.toolbar .toolbar-icon {
+  padding-left: 2.75em; /* LTR */
+  position: relative;
+}
+[dir="rtl"] .toolbar .toolbar-icon {
+  padding-left: 1.3333em;
+  padding-right: 2.75em;
+}
+.toolbar .toolbar-icon:before {
+  background-attachment: scroll;
+  background-color: transparent;
+  background-position: center center;
+  background-repeat: no-repeat;
+  content: '';
+  display: block;
+  height: 100%;
+  left: 0.6667em; /* LTR */
+  position: absolute;
+  top: 0;
+  width: 20px;
+}
+[dir="rtl"] .toolbar .toolbar-icon:before {
+  left: auto;
+  right: 0.6667em;
+}
+.toolbar button.toolbar-icon {
+  background-color: transparent;
+  border: 0;
+  font-size: 1em;
+}
+.toolbar .menu ul .toolbar-icon {
+  padding-left: 1.3333em; /* LTR */
+}
+[dir="rtl"] .toolbar .menu ul .toolbar-icon {
+  padding-left: 0;
+  padding-right: 1.3333em;
+}
+.toolbar .menu ul a.toolbar-icon:before {
+  display: none;
+}
+.toolbar .toolbar-tray-vertical .menu ul {
+  margin-left: 1.5em; /* LTR */
+}
+[dir="rtl"] .toolbar .toolbar-tray-vertical .menu ul {
+  margin-left: 0;
+  margin-right: 1.5em;
+}
+.toolbar .toolbar-tray-vertical .menu ul ul {
+  margin-left: 0.75em; /* LTR */
+}
+[dir="rtl"] .toolbar .toolbar-tray-vertical .menu ul ul {
+  margin-left: 0;
+  margin-right: 0.75em;
+}
+
+/**
+ * Top level icons
+ */
+.toolbar-icon-home:before {
+  background-image: url("../images/icon-home.png");
+}
+.toolbar-icon-home:active:before,
+.toolbar-icon-home.active:before {
+  background-image: url("../images/icon-home-active.png");
+}
+.toolbar-icon-menu:before {
+  background-image: url("../images/icon-menu.png");
+}
+.toolbar-icon-menu:active:before,
+.toolbar-icon-menu.active:before {
+  background-image: url("../images/icon-menu-active.png");
+}
+
+/**
+ * Main menu icons.
+ */
+.toolbar-icon-content:before {
+  background-image: url("../images/icon-content.png");
+}
+.toolbar-icon-content:active:before,
+.toolbar-icon-content.active:before {
+  background-image: url("../images/icon-content-active.png");
+}
+.toolbar-icon-structure:before {
+  background-image: url("../images/icon-structure.png");
+}
+.toolbar-icon-structure:active:before,
+.toolbar-icon-structure.active:before {
+  background-image: url("../images/icon-structure-active.png");
+}
+.toolbar-icon-appearance:before {
+  background-image: url("../images/icon-appearance.png");
+}
+.toolbar-icon-appearance:active:before,
+.toolbar-icon-appearance.active:before {
+  background-image: url("../images/icon-appearance-active.png");
+}
+.toolbar-icon-people:before {
+  background-image: url("../images/icon-people.png");
+}
+.toolbar-icon-people:active:before,
+.toolbar-icon-people.active:before {
+  background-image: url("../images/icon-people-active.png");
+}
+.toolbar-icon-extend:before {
+  background-image: url("../images/icon-extend.png");
+}
+.toolbar-icon-extend:active:before,
+.toolbar-icon-extend.active:before {
+  background-image: url("../images/icon-extend-active.png");
+}
+.toolbar-icon-configuration:before {
+  background-image: url("../images/icon-configuration.png");
+}
+.toolbar-icon-configuration:active:before,
+.toolbar-icon-configuration.active:before {
+  background-image: url("../images/icon-configuration-active.png");
+}
+.toolbar-icon-reports:before {
+  background-image: url("../images/icon-reports.png");
+}
+.toolbar-icon-reports:active:before,
+.toolbar-icon-reports.active:before {
+  background-image: url("../images/icon-reports-active.png");
+}
+.toolbar-icon-help:before {
+  background-image: url("../images/icon-help.png");
+}
+.toolbar-icon-help:active:before,
+.toolbar-icon-help.active:before {
+  background-image: url("../images/icon-help-active.png");
+}
+
+@media only screen and (min-width: 16.5em) {
+  .toolbar .toolbar-bar .toolbar-icon {
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+    text-indent: -9999px;
+    width: 4em;
+  }
+  .toolbar .toolbar-bar .toolbar-icon:before {
+    left: 0; /* LTR */
+    width: 100%;
+  }
+  [dir="rtl"] .toolbar .toolbar-bar .toolbar-icon:before {
+    background-size: auto auto;
+    left: auto;
+    right: 0;
+  }
+}
+
+@media only screen and (min-width: 36em) {
+  .toolbar .toolbar-bar .toolbar-icon {
+    background-position: left center; /* LTR */
+    padding-left: 2.75em; /* LTR */
+    padding-right: 1.3333em; /* LTR */
+    text-indent: 0;
+    width: auto;
+  }
+  [dir="rtl"] .toolbar .toolbar-bar .toolbar-icon {
+    background-position: right center;
+    padding-left: 1.3333em;
+    padding-right: 2.75em;
+  }
+  .toolbar .toolbar-bar .toolbar-icon:before {
+    left: 0.6667em; /* LTR */
+    width: 20px;
+  }
+  [dir="rtl"] .toolbar .toolbar-bar .toolbar-icon:before {
+    left: 0;
+    right: 0.6667em;
+  }
+}

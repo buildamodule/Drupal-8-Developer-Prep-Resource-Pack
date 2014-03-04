@@ -1,0 +1,12 @@
+name: Forum
+type: module
+description: 'Provides discussion forums.'
+dependencies:
+  - node
+  - history
+  - taxonomy
+  - comment
+package: Core
+version: VERSION
+core: 8.x
+configure: admin/structure/forum

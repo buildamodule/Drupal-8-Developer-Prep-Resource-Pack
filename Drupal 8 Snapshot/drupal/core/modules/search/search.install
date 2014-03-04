@@ -1,0 +1,216 @@
+<?php
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the Search module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function search_schema() {
+  $schema['search_dataset'] = array(
+    'description' => 'Stores items that will be searched.',
+    'fields' => array(
+      'sid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Search item ID, e.g. node ID for nodes.',
+      ),
+      'langcode' => array(
+        'type' => 'varchar',
+        'length' => '12',
+        'not null' => TRUE,
+        'description' => 'The {languages}.langcode of the item variant.',
+        'default' => '',
+      ),
+      'type' => array(
+        'type' => 'varchar',
+        'length' => 16,
+        'not null' => TRUE,
+        'description' => 'Type of item, e.g. node.',
+      ),
+      'data' => array(
+        'type' => 'text',
+        'not null' => TRUE,
+        'size' => 'big',
+        'description' => 'List of space-separated words from the item.',
+      ),
+      'reindex' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Set to force node reindexing.',
+      ),
+    ),
+    'primary key' => array('sid', 'langcode', 'type'),
+  );
+
+  $schema['search_index'] = array(
+    'description' => 'Stores the search index, associating words, items and scores.',
+    'fields' => array(
+      'word' => array(
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The {search_total}.word that is associated with the search item.',
+      ),
+      'sid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The {search_dataset}.sid of the searchable item to which the word belongs.',
+      ),
+      'langcode' => array(
+        'type' => 'varchar',
+        'length' => '12',
+        'not null' => TRUE,
+        'description' => 'The {languages}.langcode of the item variant.',
+        'default' => '',
+      ),
+      'type' => array(
+        'type' => 'varchar',
+        'length' => 16,
+        'not null' => TRUE,
+        'description' => 'The {search_dataset}.type of the searchable item to which the word belongs.',
+      ),
+      'score' => array(
+        'type' => 'float',
+        'not null' => FALSE,
+        'description' => 'The numeric score of the word, higher being more important.',
+      ),
+    ),
+    'indexes' => array(
+      'sid_type' => array('sid', 'langcode', 'type'),
+    ),
+    'foreign keys' => array(
+      'search_dataset' => array(
+        'table' => 'search_dataset',
+        'columns' => array(
+          'sid' => 'sid',
+          'langcode' => 'langcode',
+          'type' => 'type',
+        ),
+      ),
+    ),
+    'primary key' => array('word', 'sid', 'langcode', 'type'),
+  );
+
+  $schema['search_total'] = array(
+    'description' => 'Stores search totals for words.',
+    'fields' => array(
+      'word' => array(
+        'description' => 'Primary Key: Unique word in the search index.',
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'count' => array(
+        'description' => "The count of the word in the index using Zipf's law to equalize the probability distribution.",
+        'type' => 'float',
+        'not null' => FALSE,
+      ),
+    ),
+    'primary key' => array('word'),
+  );
+
+  $schema['search_node_links'] = array(
+    'description' => 'Stores items (like nodes) that link to other nodes, used to improve search scores for nodes that are frequently linked to.',
+    'fields' => array(
+      'sid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The {search_dataset}.sid of the searchable item containing the link to the node.',
+      ),
+      'type' => array(
+        'type' => 'varchar',
+        'length' => 16,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The {search_dataset}.type of the searchable item containing the link to the node.',
+      ),
+      'nid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The {node}.nid that this item links to.',
+      ),
+      'caption' => array(
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => FALSE,
+        'description' => 'The text used to link to the {node}.nid.',
+      ),
+    ),
+    'primary key' => array('sid', 'type', 'nid'),
+    'indexes' => array(
+      'nid' => array('nid'),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Update search module to use the configuration system.
+ *
+ * @ingroup config_upgrade
+ */
+function search_update_8000() {
+  update_variables_to_config('search.settings', array(
+   'minimum_word_size' => 'index.minimum_word_size',
+   'overlap_cjk' => 'index.overlap_cjk',
+   'search_cron_limit' => 'index.cron_limit',
+   'search_tag_weights' => 'index.tag_weights',
+   'search_active_modules' => 'active_modules',
+   'search_and_or_limit' => 'and_or_limit',
+   'search_default_module' => 'default_module',
+  ));
+}
+
+/**
+ * Adds the langcode field and indexes to {search_dataset} and {search_index}.
+ */
+function search_update_8001() {
+  // In order to upgrade the existing entries to have the correct langcode we
+  // need to recreate search data through running cron.
+  db_truncate('search_dataset');
+  db_truncate('search_index');
+  db_truncate('search_node_links');
+
+  // Add the fields and indexes.
+  db_drop_primary_key('search_dataset');
+  db_add_field('search_dataset', 'langcode', array(
+    'type' => 'varchar',
+    'length' => '12',
+    'not null' => TRUE,
+    'description' => 'The {languages}.langcode of the item variant.',
+    'default' => '',
+  ));
+  db_add_primary_key('search_dataset', array('sid', 'langcode', 'type'));
+
+  db_drop_primary_key('search_index');
+  db_drop_index('search_index', 'sid_type');
+  db_add_field('search_index', 'langcode', array(
+    'type' => 'varchar',
+    'length' => '12',
+    'not null' => TRUE,
+    'description' => 'The {languages}.langcode of the item variant.',
+    'default' => '',
+  ),
+  array(
+    'indexes' => array(
+      'sid_type' => array('sid', 'langcode', 'type'),
+    ),
+  ));
+  db_add_primary_key('search_index', array('word', 'sid', 'langcode', 'type'));
+}

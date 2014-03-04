@@ -1,0 +1,15 @@
+services:
+  plugin.manager.aggregator.fetcher:
+    class: Drupal\aggregator\Plugin\AggregatorPluginManager
+    arguments: [fetcher, '@container.namespaces']
+  plugin.manager.aggregator.parser:
+    class: Drupal\aggregator\Plugin\AggregatorPluginManager
+    arguments: [parser, '@container.namespaces']
+  plugin.manager.aggregator.processor:
+    class: Drupal\aggregator\Plugin\AggregatorPluginManager
+    arguments: [processor, '@container.namespaces']
+  access_check.aggregator.categories:
+    class: Drupal\aggregator\Access\CategoriesAccessCheck
+    arguments: ['@database']
+    tags:
+      - { name: access_check }

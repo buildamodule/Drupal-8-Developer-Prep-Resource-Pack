@@ -1,0 +1,20 @@
+book_render:
+  pattern: '/book'
+  defaults:
+    _content: '\Drupal\book\Controller\BookController::bookRender'
+  requirements:
+    _permission: 'access content'
+
+book_admin:
+  pattern: '/admin/structure/book'
+  defaults:
+    _content: '\Drupal\book\Controller\BookController::adminOverview'
+  requirements:
+    _permission: 'administer book outlines'
+
+book_settings:
+  pattern: '/admin/structure/book/settings'
+  defaults:
+    _form: 'Drupal\book\BookSettingsForm'
+  requirements:
+    _permission: 'administer site configuration'

@@ -1,0 +1,81 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the book module.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function book_uninstall() {
+  // Delete menu links.
+  db_delete('menu_links')
+    ->condition('module', 'book')
+    ->execute();
+  menu_cache_clear_all();
+}
+
+/**
+ * Implements hook_schema().
+ */
+function book_schema() {
+  $schema['book'] = array(
+  'description' => 'Stores book outline information. Uniquely connects each node in the outline to a link in {menu_links}',
+    'fields' => array(
+      'mlid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => "The book page's {menu_links}.mlid.",
+      ),
+      'nid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => "The book page's {node}.nid.",
+      ),
+      'bid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => "The book ID is the {book}.nid of the top-level page.",
+      ),
+    ),
+    'primary key' => array('mlid'),
+    'unique keys' => array(
+      'nid' => array('nid'),
+    ),
+    'indexes' => array(
+      'bid' => array('bid'),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Move the Book module settings from variables to config.
+ *
+ * @ingroup config_upgrade
+ */
+function book_update_8000() {
+  update_variables_to_config('book.settings', array(
+    'book_child_type' => 'child_type',
+    'book_block_mode' => 'block.navigation.mode',
+  ));
+  $allowed_types = update_variable_get('book_allowed_types', FALSE);
+  if ($allowed_types) {
+    // Ensure consistent ordering of allowed_types.
+    // @see book_admin_settings_submit()
+    sort($allowed_types);
+
+    Drupal::config('book.settings')
+      ->set('allowed_types', $allowed_types)
+      ->save();
+  }
+
+}

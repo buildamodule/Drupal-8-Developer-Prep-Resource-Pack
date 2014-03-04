@@ -1,0 +1,882 @@
+<?php
+
+/**
+ * @file
+ * Add language handling functionality to Drupal.
+ */
+
+use Drupal\node\NodeTypeInterface;
+use Drupal\Core\Language\Language;
+
+/**
+ * Implements hook_help().
+ */
+function language_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#language':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('The Language module allows you to maintain a list of languages used on your Drupal site for providing language information for content and for interface translation (using the Locale module). For more information, see the online handbook entry for <a href="@language">Language module</a>.', array('@language' => 'http://drupal.org/documentation/modules/language')) . '</p>';
+      $output .= '<h3>' . t('Uses') . '</h3>';
+      $output .= '<dl>';
+      $output .= '<dt>' . t('Configuring the list of languages') . '</dt>';
+      $output .= '<dd>' . t('<a href="@configure-languages">Configure the list of languages</a> either using the built-in language list or providing any custom languages you wish.', array('@configure-languages' => url('admin/config/regional/language'))) . '</dd>';
+      $output .= '<dt>' . t('Configuring a multilingual site') . '</dt>';
+      $output .= '<dd>' . t("Language negotiation allows your site to automatically change language based on the domain or path used for each request. Users may (optionally) select their preferred language on their <em>My account</em> page, and your site can be configured to honor a web browser's preferred language settings. Site content can be translated using the <a href='@content-help'>Content Translation module</a>.", array('@content-help' => url('admin/help/translation'))) . '</dd>';
+      $output .= '</dl>';
+      return $output;
+
+    case 'admin/config/regional/language':
+      return '<p>' . t('With multiple languages enabled, registered users may select their preferred language and authors can assign a specific language to content. The selection of what language is used to display page elements is made depending on the detection menthod settings in the <a href="@detection">Detection and Selection</a> tab.', array('@detection' => url('admin/config/regional/language/detection'))) . '</p>';
+
+    case 'admin/config/regional/language/add':
+      return '<p>' . t('Add a language to be supported by your site. If your desired language is not available, pick <em>Custom language...</em> at the end and provide a language code and other details manually.') . '</p>';
+
+    case 'admin/config/regional/language/detection':
+      $output = '<p>' . t('Define how to decide which language is used to display page elements (primarily text provided by Drupal and modules, such as field labels and help text). This decision is made by evaluating a series of detection methods for languages; the first detection method that gets a result will determine which language is used for that type of text. Be aware that some language negotiation methods are unreliable under certain conditions, such as browser detection when page-caching is enabled and a user is not currently logged in. Define the order of evaluation of language detection methods on this page. Default language can be changed at the <a href="@region-settings">Regional settings</a> page.', array('@region-settings' => url('admin/config/regional/settings'))) . '</p>';
+      return $output;
+
+    case 'admin/config/regional/language/detection/session':
+      $output = '<p>' . t('Determine the language from a request/session parameter. Example: "http://example.com?language=de" sets language to German based on the use of "de" within the "language" parameter.') . '</p>';
+      return $output;
+
+    case 'admin/config/regional/language/detection/browser':
+      $output = '<p>' . t('Browsers use different language codes to refer to the same languages. You can add and edit mappings from browser language codes to the <a href="@configure-languages">languages used by Drupal</a>.', array('@configure-languages' => url('admin/config/regional/language'))) . '</p>';
+      return $output;
+
+    case 'admin/config/regional/language/detection/selected':
+      $output = '<p>' . t('Changing the selected language here (and leaving this option as the last among the detection and selection options) is the easiest way to change the fallback language for the website, if you need to change how your site works by default (eg. when using an empty path prefix or using the default domain). <a href="@admin-change-language">Changing the site\'s default language</a> itself might have other undesired side effects.
+', array('@admin-change-language' => url('admin/config/regional/language'))) . '</p>';
+
+      return $output;
+
+    case 'admin/structure/block/manage/%':
+    case 'admin/structure/block/add/%/%':
+      if ($arg[4] == 'language' && $arg[5] == 'language_interface') {
+        return '<p>' . t('With multiple languages enabled, registered users can select their preferred language and authors can assign a specific language to content.') . '</p>';
+      }
+      break;
+
+    case 'admin/config/regional/content-language':
+      return t('Change language settings for <em>content types</em>, <em>taxonomy vocabularies</em>, <em>user profiles</em>, or any other supported element on your site. By default, language settings hide the language selector and the language is the site\'s default language.');
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function language_menu() {
+  // Base language management and configuration.
+  $items['admin/config/regional/language'] = array(
+    'title' => 'Languages',
+    'description' => 'Configure languages for content and the user interface.',
+    'route_name' => 'language_admin_overview',
+    'weight' => -10,
+  );
+  $items['admin/config/regional/language/list'] = array(
+    'title' => 'List',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items['admin/config/regional/language/add'] = array(
+    'title' => 'Add language',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('language_admin_add_form'),
+    'access arguments' => array('administer languages'),
+    'type' => MENU_LOCAL_ACTION,
+    'file' => 'language.admin.inc',
+  );
+  $items['admin/config/regional/language/edit/%language'] = array(
+    'title' => 'Edit language',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('language_admin_edit_form', 5),
+    'access callback' => 'language_access_language_edit_or_delete',
+    'access arguments' => array(5),
+    'file' => 'language.admin.inc',
+  );
+  $items['admin/config/regional/language/delete/%language'] = array(
+    'title' => 'Confirm delete',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('language_admin_delete_form', 5),
+    'access callback' => 'language_access_language_edit_or_delete',
+    'access arguments' => array(5),
+    'file' => 'language.admin.inc',
+  );
+
+  // Language negotiation.
+  $items['admin/config/regional/language/detection'] = array(
+    'title' => 'Detection and selection',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('language_negotiation_configure_form'),
+    'access arguments' => array('administer languages'),
+    'weight' => 10,
+    'file' => 'language.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['admin/config/regional/language/detection/url'] = array(
+    'title' => 'URL language detection configuration',
+    'route_name' => 'language_negotiation_url',
+    'type' => MENU_VISIBLE_IN_BREADCRUMB,
+  );
+  $items['admin/config/regional/language/detection/session'] = array(
+    'title' => 'Session language detection configuration',
+    'route_name' => 'language_negotiation_session',
+    'type' => MENU_VISIBLE_IN_BREADCRUMB,
+  );
+  $items['admin/config/regional/language/detection/browser'] = array(
+    'title' => 'Browser language detection configuration',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('language_negotiation_configure_browser_form'),
+    'access arguments' => array('administer languages'),
+    'file' => 'language.admin.inc',
+    'type' => MENU_VISIBLE_IN_BREADCRUMB,
+  );
+  $items['admin/config/regional/language/detection/browser/delete/%'] = array(
+    'title' => 'Delete language mapping',
+    'page arguments' => array('language_negotiation_configure_browser_delete_form', 7),
+    'type' => MENU_CALLBACK,
+    'access arguments' => array('administer languages'),
+    'file' => 'language.admin.inc',
+  );
+  $items['admin/config/regional/language/detection/selected'] = array(
+    'title' => 'Selected language detection configuration',
+    'route_name' => 'language_negotiation_selected',
+    'type' => MENU_VISIBLE_IN_BREADCRUMB,
+  );
+
+  // Content language settings.
+  $items['admin/config/regional/content-language'] = array(
+    'title' => 'Content language settings',
+    'description' => 'Configure content language support for any multilingual element.',
+    'page callback' => 'language_content_settings_page',
+    'access arguments' => array('administer languages'),
+    'file' => 'language.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Editing or deleting locked languages should not be possible.
+ *
+ * @deprecated Use \Drupal\language\LanguageAccessController instead.
+ */
+function language_access_language_edit_or_delete($language) {
+  return !$language->locked && user_access('administer languages');
+}
+
+/**
+ * Implements hook_permission().
+ */
+function language_permission() {
+  return array(
+    'administer languages' => array(
+      'title' => t('Administer languages'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function language_theme() {
+  return array(
+    'language_negotiation_configure_form' => array(
+      'render element' => 'form',
+    ),
+    'language_negotiation_configure_browser_form_table' => array(
+      'render element' => 'form',
+      'file' => 'language.admin.inc',
+    ),
+    'language_content_settings_table' => array(
+      'render element' => 'element',
+      'file' => 'language.admin.inc',
+    ),
+  );
+}
+
+/**
+ * Returns a list of supported entity types.
+ *
+ * @return array
+ *   An array of entity type names.
+ */
+function language_entity_supported() {
+  $supported = array();
+  foreach (entity_get_info() as $entity_type => $info) {
+    if (!empty($info['translatable'])) {
+      $supported[$entity_type] = $entity_type;
+    }
+  }
+  return $supported;
+}
+
+/**
+ * Implements hook_element_info_alter().
+ */
+function language_element_info_alter(&$type) {
+  // Alter the language_select element so that it will be rendered like a select
+  // field.
+  if (isset($type['language_select'])) {
+    if (!isset($type['language_select']['#process'])) {
+      $type['language_select']['#process'] = array();
+    }
+    if (!isset($type['language_select']['#theme_wrappers'])) {
+      $type['language_select']['#theme_wrappers'] = array();
+    }
+    $type['language_select']['#process'] = array_merge($type['language_select']['#process'], array('language_process_language_select', 'form_process_select', 'ajax_process_form'));
+    $type['language_select']['#theme'] = 'select';
+    $type['language_select']['#theme_wrappers'] = array_merge($type['language_select']['#theme_wrappers'], array('form_element'));
+    $type['language_select']['#languages'] = Language::STATE_CONFIGURABLE;
+    $type['language_select']['#multiple'] = FALSE;
+  }
+}
+
+/**
+ * Processes a language select list form element.
+ *
+ * @param array $element
+ *   The form element to process.
+ *
+ * @return array $element
+ *   The processed form element.
+ */
+function language_process_language_select($element) {
+  // Don't set the options if another module (translation for example) already
+  // set the options.
+  if (!isset($element['#options'])) {
+    $element['#options'] = array();
+    foreach (language_list($element['#languages']) as $langcode => $language) {
+      $element['#options'][$langcode] = $language->locked ? t('- @name -', array('@name' => $language->name)) : $language->name;
+    }
+  }
+  return $element;
+}
+
+/**
+ * Implements hook_element_info().
+ */
+function language_element_info() {
+  $types['language_configuration'] = array(
+    '#input' => TRUE,
+    '#tree' => TRUE,
+    '#process' => array('language_configuration_element_process'),
+  );
+  return $types;
+}
+
+/**
+ * Returns the default options for the language configuration form element.
+ *
+ * @return array
+ *   An array containing the default options.
+ */
+function language_configuration_element_default_options() {
+  $language_options = array();
+
+  $languages = language_list(Language::STATE_ALL);
+  foreach ($languages as $langcode => $language) {
+    $language_options[$langcode] = $language->locked ? t('- @name -', array('@name' => $language->name)) : $language->name;
+  }
+
+  $language_options += array(
+    'site_default' => t("Site's default language (!language)", array('!language' => language_default()->name)),
+    'current_interface' => t('Current interface language'),
+    'authors_default' => t("Author's preferred language"),
+  );
+  return $language_options;
+}
+
+/**
+ * Process handler for the language_configuration form element.
+ */
+function language_configuration_element_process($element, &$form_state, &$form) {
+  $options = isset($element['#options']) ? $element['#options'] : array();
+  // Avoid validation failure since we are moving the '#options' key in the
+  // nested 'language' select element.
+  unset($element['#options']);
+  $element['langcode'] = array(
+    '#type' => 'select',
+    '#title' => t('Default language'),
+    '#options' => $options + language_configuration_element_default_options(),
+    '#description' => t('Explanation of the language options is found on the <a href="@languages_list_page">languages list page</a>.', array('@languages_list_page' => url('admin/config/regional/language'))),
+    '#default_value' => isset($element['#default_value']['langcode']) ? $element['#default_value']['langcode'] : NULL,
+  );
+
+  $element['language_show'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Show language selector on create and edit pages'),
+    '#default_value' => isset($element['#default_value']['language_show']) ? $element['#default_value']['language_show'] : NULL,
+  );
+
+  // Add the entity type and bundle information to the form if they are set.
+  // They will be used, in the submit handler, to generate the names of the
+  // variables that will store the settings and are a way to uniquely identify
+  // the entity.
+  if (!isset($form_state['language'])) {
+    $form_state['language'] = array();
+  }
+  $form_state['language'] += array(
+    $element['#name'] => array(
+      'entity_type' => $element['#entity_information']['entity_type'],
+      'bundle' => $element['#entity_information']['bundle'],
+    ),
+  );
+
+  // Do not add the submit callback for the language content settings page,
+  // which is handled separately.
+  if (array_search('language_content_settings_form_submit', $form['#submit']) === FALSE) {
+    // Determine where to attach the language_configuration element submit handler.
+    // @todo Form API: Allow form widgets/sections to declare #submit handlers.
+    if (isset($form['actions']['submit']['#submit']) && array_search('language_configuration_element_submit', $form['actions']['submit']['#submit']) === FALSE) {
+      $form['actions']['submit']['#submit'][] = 'language_configuration_element_submit';
+    }
+    elseif (array_search('language_configuration_element_submit', $form['#submit']) === FALSE) {
+      $form['#submit'][] = 'language_configuration_element_submit';
+    }
+  }
+  return $element;
+}
+
+/**
+ * Submit handler for the forms that have a language_configuration element.
+ */
+function language_configuration_element_submit(&$form, &$form_state) {
+  // Iterate through all the language_configuration elements and save their
+  // values.
+  if (isset($form_state['language'])) {
+    foreach ($form_state['language'] as $element_name => $values) {
+      language_save_default_configuration($values['entity_type'], $values['bundle'],  $form_state['values'][$element_name]);
+    }
+  }
+}
+
+/**
+ * Saves a language configuration that is attached to an entity type and bundle.
+ *
+ * @param string $entity_type
+ *   A string representing the entity type.
+ * @param string $bundle
+ *   A string representing the bundle.
+ * @param array $values
+ *   An array holding the values to be saved having the following keys:
+ *   - langcode: the language code.
+ *   - language_show: if the language element should be hidden or not.
+ */
+function language_save_default_configuration($entity_type, $bundle, $values = array()) {
+  Drupal::config('language.settings')->set(language_get_default_configuration_settings_key($entity_type, $bundle), array('langcode' => $values['langcode'], 'language_show' => $values['language_show']))->save();
+}
+
+/**
+ * Returns the language configuration stored for an entity type and bundle.
+ *
+ * @param string $entity_type
+ *   A string representing the entity type.
+ * @param string $bundle
+ *   A string representing the bundle.
+ *
+ * @return array
+ *   An array with the following keys:
+ *   - langcode: the language code.
+ *   - language_show: if the language element is hidden or not.
+ */
+function language_get_default_configuration($entity_type, $bundle) {
+  $configuration = Drupal::config('language.settings')->get(language_get_default_configuration_settings_key($entity_type, $bundle));
+  if (is_null($configuration)) {
+    $configuration = array();
+  }
+  $configuration += array('langcode' => 'site_default', 'language_show' => FALSE);
+  return $configuration;
+}
+
+/**
+ * Clears the default language configuration for an entity type and bundle.
+ *
+ * @param string $entity_type
+ *   A string representing the entity type.
+ * @param string $bundle
+ *   A string representing the bundle.
+ */
+function language_clear_default_configuration($entity_type, $bundle) {
+  Drupal::config('language.settings')->clear(language_get_default_configuration_settings_key($entity_type, $bundle))->save();
+}
+
+/**
+ * Returns the root name of the variables used to store the configuration.
+ *
+ * Based on the entity type and bundle, the variables used to store the
+ * configuration will have a common root name.
+ *
+ * @param string $entity_type
+ *   A string representing the entity type.
+ * @param string $bundle
+ *   A string representing the bundle.
+ *
+ * @return string
+ *   The root name of the variables.
+ */
+function language_get_default_configuration_settings_key($entity_type, $bundle) {
+  // Replace all the characters that are not letters, numbers or "_" with "_".
+  $entity_type = preg_replace('/[^0-9a-zA-Z_]/', "_", $entity_type);
+  $bundle = preg_replace('/[^0-9a-zA-Z_]/', "_", $bundle);
+  return $entity_type . '.' . $bundle . '.language.default_configuration';
+}
+
+/**
+ * Implements hook_node_type_update().
+ */
+function language_node_type_update(NodeTypeInterface $type) {
+  if ($type->original->id() != $type->id()) {
+    language_save_default_configuration('node', $type->id(), language_get_default_configuration('node', $type->original->id()));
+    language_clear_default_configuration('node', $type->original->id());
+  }
+}
+
+/**
+ * Returns the default language code assigned to an entity type and a bundle.
+ *
+ * @param string $entity_type
+ *   The entity type.
+ * @param string $bundle
+ *   The bundle name.
+ *
+ * @return string
+ *   The language code.
+ */
+function language_get_default_langcode($entity_type, $bundle) {
+  $configuration = language_get_default_configuration($entity_type, $bundle);
+
+  if (!isset($configuration['langcode'])) {
+    $configuration['langcode'] = 'site_default';
+  }
+
+  $default_value = NULL;
+  $language_interface = language(Language::TYPE_INTERFACE);
+  switch ($configuration['langcode']) {
+    case 'site_default':
+      $default_value = language_default()->id;
+      break;
+
+    case 'current_interface':
+      $default_value = $language_interface->id;
+      break;
+
+    case 'authors_default':
+      global $user;
+      $language_code = $user->getPreferredLangcode();
+      if (!empty($language_code)) {
+        $default_value = $language_code;
+      }
+      else {
+        $default_value = $language_interface->id;
+      }
+      break;
+  }
+  if ($default_value) {
+    return $default_value;
+  }
+
+  // If we still do not have a default value, just return the value stored in
+  // the configuration; it has to be an actual language code.
+  return $configuration['langcode'];
+}
+
+/**
+ * API function to add or update a language.
+ *
+ * @param $language
+ *   Language object with properties corresponding to the 'language'
+ *   configuration properties.
+ */
+function language_save($language) {
+  $language_entity = entity_load('language_entity', $language->id);
+  if (!$language_entity) {
+    $language_entity = entity_create('language_entity', array(
+      'id' => $language->id,
+    ));
+  }
+  $language->is_new = $language_entity->isNew();
+
+  // Let other modules modify $language before saved.
+  Drupal::moduleHandler()->invokeAll('language_presave', array($language));
+
+  // Assign language properties to language entity.
+  $language_entity->label = isset($language->name) ? $language->name : '';
+  $language_entity->direction = isset($language->direction) ? $language->direction : '0';
+  $language_entity->locked = isset($language->locked) ? $language->locked : '0';
+  $language_entity->weight = isset($language->weight) ? $language->weight : '0';
+
+  // Save the record and inform others about the change.
+  $language_entity->save();
+  $t_args = array('%language' => $language->name, '%langcode' => $language->id);
+  if ($language->is_new) {
+    Drupal::moduleHandler()->invokeAll('language_insert', array($language));
+    watchdog('language', 'The %language (%langcode) language has been created.', $t_args);
+  }
+  else {
+    Drupal::moduleHandler()->invokeAll('language_update', array($language));
+    watchdog('language', 'The %language (%langcode) language has been updated.', $t_args);
+  }
+
+  if (!empty($language->default)) {
+    // Set the new version of this language as default in a variable.
+    variable_set('language_default', (array) $language);
+  }
+
+  // Kill the static cache in language_list().
+  drupal_static_reset('language_list');
+
+  // Update language count based on unlocked language count.
+  language_update_count();
+
+  // Update weight of locked system languages.
+  language_update_locked_weights();
+
+  language_negotiation_include();
+
+  // Update URL Prefixes for all languages after the new default language is
+  // propagated and the language_list() cache is flushed.
+  language_negotiation_url_prefixes_update();
+
+  return $language;
+}
+
+/**
+ * Updates the language_count state.
+ *
+ * This is used to check if a site is multilingual or not.
+ *
+ * @see language_multilingual()
+ */
+function language_update_count() {
+  $count = 0;
+  foreach (entity_load_multiple('language_entity') as $language) {
+    if (!$language->locked) {
+      $count++;
+    }
+  }
+  Drupal::state()->set('language_count', $count);
+}
+
+/**
+ * Delete a language.
+ *
+ * @param $langcode
+ *   Language code of the language to be deleted.
+ *
+ * @return
+ *   TRUE if language is successfully deleted. Otherwise FALSE.
+ */
+function language_delete($langcode) {
+  $languages = language_list(Language::STATE_ALL);
+  if (isset($languages[$langcode]) && !$languages[$langcode]->locked) {
+    $language = $languages[$langcode];
+
+    Drupal::moduleHandler()->invokeAll('language_delete', array($language));
+
+    // Remove the language.
+    entity_delete_multiple('language_entity', array($language->id));
+
+    drupal_static_reset('language_list');
+
+    language_update_count();
+
+    // Update weight of locked system languages.
+    language_update_locked_weights();
+
+    $t_args = array('%language' => $language->name, '%langcode' => $language->id);
+    watchdog('language', 'The %language (%langcode) language has been removed.', $t_args);
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+ * Implements hook_library_info().
+ */
+function language_library_info() {
+  $libraries['language.admin'] = array(
+    'title' => 'Language detection admin',
+    'version' => VERSION,
+    'js' => array(
+      drupal_get_path('module', 'language') . '/language.admin.js' => array(),
+    ),
+    'dependencies' => array(
+      array('system', 'jquery'),
+      array('system', 'drupal'),
+      array('system', 'jquery.once'),
+    ),
+  );
+
+  return $libraries;
+}
+
+/**
+ * Implements hook_language_types_info().
+ *
+ * Defines the three core language types:
+ * - Interface language is the only configurable language type in core. It is
+ *   used by t() as the default language if none is specified.
+ * - Content language is by default non-configurable and inherits the interface
+ *   language negotiated value. It is used by the Field API to determine the
+ *   display language for fields if no explicit value is specified.
+ * - URL language is by default non-configurable and is determined through the
+ *   URL language negotiation method or the URL fallback language negotiation
+ *   method if no language can be detected. It is used by l() as the default
+ *   language if none is specified.
+ */
+function language_language_types_info() {
+  language_negotiation_include();
+
+  return array(
+    Language::TYPE_INTERFACE => array(
+      'name' => t('User interface text'),
+      'description' => t('Order of language detection methods for user interface text. If a translation of user interface text is available in the detected language, it will be displayed.'),
+      'locked' => TRUE,
+    ),
+    Language::TYPE_CONTENT => array(
+      'name' => t('Content'),
+      'description' => t('Order of language detection methods for content. If a version of content is available in the detected language, it will be displayed.'),
+      'fixed' => array(LANGUAGE_NEGOTIATION_INTERFACE),
+      'locked' => TRUE,
+    ),
+    Language::TYPE_URL => array(
+      'fixed' => array(LANGUAGE_NEGOTIATION_URL, LANGUAGE_NEGOTIATION_URL_FALLBACK),
+      'locked' => TRUE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_language_negotiation_info().
+ */
+function language_language_negotiation_info() {
+  language_negotiation_include();
+  $file = drupal_get_path('module', 'language') . '/language.negotiation.inc';
+
+  $negotiation_info = array();
+  $negotiation_info[LANGUAGE_NEGOTIATION_URL] = array(
+    'types' => array(Language::TYPE_CONTENT, Language::TYPE_INTERFACE, Language::TYPE_URL),
+    'callbacks' => array(
+      'negotiation' => 'language_from_url',
+      'language_switch' => 'language_switcher_url',
+    ),
+    'file' => $file,
+    'weight' => -8,
+    'name' => t('URL'),
+    'description' => t('Language from the URL (Path prefix or domain).'),
+    'config' => 'admin/config/regional/language/detection/url',
+  );
+
+  $negotiation_info[LANGUAGE_NEGOTIATION_SESSION] = array(
+    'callbacks' => array(
+      'negotiation' => 'language_from_session',
+      'language_switch' => 'language_switcher_session',
+      'url_rewrite' => 'language_url_rewrite_session',
+    ),
+    'file' => $file,
+    'weight' => -6,
+    'name' => t('Session'),
+    'description' => t('Language from a request/session parameter.'),
+    'config' => 'admin/config/regional/language/detection/session',
+  );
+
+  $negotiation_info[LANGUAGE_NEGOTIATION_USER] = array(
+    'callbacks' => array('negotiation' => 'language_from_user'),
+    'file' => $file,
+    'weight' => -4,
+    'name' => t('Account preference for site'),
+    'description' => t("The language setting for the site in the user's account."),
+  );
+
+  $negotiation_info[LANGUAGE_NEGOTIATION_BROWSER] = array(
+    'callbacks' => array('negotiation' => 'language_from_browser'),
+    'file' => $file,
+    'weight' => -2,
+    'cache' => 0,
+    'name' => t('Browser'),
+    'description' => t("Language from the browser's language settings."),
+    'config' => 'admin/config/regional/language/detection/browser',
+  );
+
+  $negotiation_info[LANGUAGE_NEGOTIATION_INTERFACE] = array(
+    'types' => array(Language::TYPE_CONTENT),
+    'callbacks' => array('negotiation' => 'language_from_interface'),
+    'file' => $file,
+    'weight' => 8,
+    'name' => t('Interface'),
+    'description' => t('Use the detected interface language.'),
+  );
+
+  $negotiation_info[LANGUAGE_NEGOTIATION_URL_FALLBACK] = array(
+    'types' => array(Language::TYPE_URL),
+    'callbacks' => array('negotiation' => 'language_url_fallback'),
+    'file' => $file,
+    'weight' => 8,
+    'name' => t('URL fallback'),
+    'description' => t('Use an already detected language for URLs if none is found.'),
+  );
+
+  $negotiation_info[LANGUAGE_NEGOTIATION_USER_ADMIN] = array(
+    'types' => array(Language::TYPE_INTERFACE),
+    'callbacks' => array('negotiation' => 'language_from_user_admin'),
+    'file' => $file,
+    'weight' => 10,
+    'name' => t('Account preference for administration pages'),
+    'description' => t("The language setting for account administration pages in the user's account."),
+  );
+
+  return $negotiation_info;
+}
+
+/**
+ * Include negotiation backend functionality.
+ */
+function language_negotiation_include() {
+  include_once DRUPAL_ROOT . '/core/includes/language.inc';
+  include_once __DIR__ . '/language.negotiation.inc';
+}
+
+/**
+ * Implements hook_modules_enabled().
+ */
+function language_modules_enabled($modules) {
+  include_once DRUPAL_ROOT . '/core/includes/language.inc';
+  // Load configurability options from configuration.
+  language_types_set(array());
+  language_negotiation_purge();
+}
+
+/**
+ * Implements hook_modules_disabled().
+ */
+function language_modules_disabled($modules) {
+  language_modules_enabled($modules);
+}
+
+/**
+ * Implements hook_language_insert().
+ */
+function language_language_insert($language) {
+  if (!empty($language->locked)) {
+    return;
+  }
+
+  language_negotiation_include();
+
+  // Add language to the list of language domains.
+  $domains = language_negotiation_url_domains();
+  $domains[$language->id] = '';
+  language_negotiation_url_domains_save($domains);
+}
+
+/**
+ * Implements hook_language_delete().
+ */
+function language_language_delete($language) {
+  language_negotiation_include();
+
+  // Remove language from language prefix list.
+  $prefixes = language_negotiation_url_prefixes();
+  unset($prefixes[$language->id]);
+  language_negotiation_url_prefixes_save($prefixes);
+
+  // Remove language from language domain list.
+  $domains = language_negotiation_url_domains();
+  unset($domains[$language->id]);
+  language_negotiation_url_domains_save($domains);
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for block.html.twig.
+ */
+function language_preprocess_block(&$variables) {
+  if ($variables['configuration']['module'] == 'language') {
+    $variables['attributes']['role'] = 'navigation';
+  }
+}
+
+/**
+ * Returns language mappings between browser and Drupal language codes.
+ *
+ * @return array
+ *   An array containing browser language codes as keys with corresponding
+ *   Drupal language codes as values.
+ */
+function language_get_browser_drupal_langcode_mappings() {
+  $config = Drupal::config('language.mappings');
+  if ($config->isNew()) {
+    return array();
+  }
+  return $config->get();
+}
+
+/**
+ * Stores language mappings between browser and Drupal language codes.
+ *
+ * @param array $mappings
+ *   An array containing browser language codes as keys with corresponding
+ *   Drupal language codes as values.
+ */
+function language_set_browser_drupal_langcode_mappings($mappings) {
+  $config = Drupal::config('language.mappings');
+  $config->setData($mappings);
+  $config->save();
+}
+
+/**
+ * Updates locked system language weights.
+ */
+function language_update_locked_weights() {
+  $max_weight = 0;
+
+  // Get maximum weight to update the system languages to keep them on bottom.
+  foreach (language_list(Language::STATE_CONFIGURABLE) as $language) {
+    if (!$language->locked && $language->weight > $max_weight) {
+      $max_weight = $language->weight;
+    }
+  }
+
+  // Loop locked languages to maintain the existing order.
+  foreach (language_list(Language::STATE_LOCKED) as $language) {
+    $max_weight++;
+    // Update system languages weight.
+    Drupal::config('language.entity.' . $language->id)
+      ->set('weight', $max_weight)
+      ->save();
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter for system_regional_settings().
+ *
+ * @see language_system_regional_settings_form_submit()
+ */
+function language_form_system_regional_settings_alter(&$form, &$form_state) {
+  $languages = language_list();
+  $default = language_default();
+  foreach ($languages as $key => $language) {
+    $language_options[$key] = $language->name;
+  }
+  $form['locale']['site_default_language'] = array(
+    '#type' => 'select',
+    '#title' => t('Default language'),
+    '#default_value' => $default->id,
+    '#options' => $language_options,
+    '#description' => t('It is not recommended to change the default language on a working site. <a href="@language-detection">Configure the Selected language</a> setting on the detection and selection page to change the fallback language for language selection.', array('@language-detection' => url('admin/config/regional/language/detection'))),
+    '#weight' => -1,
+  );
+  // Add submit handler to save default language.
+  $form['#submit'][] = 'language_system_regional_settings_form_submit';
+}
+
+/**
+ * Form submission handler for system_regional_settings().
+ *
+ * @see language_form_system_regional_settings_alter()
+ */
+function language_system_regional_settings_form_submit($form, &$form_state) {
+  $languages = language_list();
+  $language = $languages[$form_state['values']['site_default_language']];
+  $language->default = TRUE;
+  language_save($language);
+}

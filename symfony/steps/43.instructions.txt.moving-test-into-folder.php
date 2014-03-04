@@ -1,0 +1,1 @@
+* Move FrameworkTest.php into /src/Simplex/Tests

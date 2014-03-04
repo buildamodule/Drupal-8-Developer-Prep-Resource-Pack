@@ -1,0 +1,37 @@
+<?php
+ 
+require_once __DIR__ . '/vendor/autoload.php';
+ 
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing;
+use Symfony\Component\HttpKernel;
+use Symfony\Component\EventDispatcher\EventDispatcher;
+
+$request = Request::createFromGlobals();
+$routes = include __DIR__ . '/src/app.php';
+ 
+$context = new Routing\RequestContext();
+$matcher = new Routing\Matcher\UrlMatcher($routes, $context);
+$resolver = new HttpKernel\Controller\ControllerResolver();
+
+$dispatcher = new EventDispatcher();
+$dispatcher->addSubscriber(new HttpKernel\EventListener\RouterListener($matcher));
+
+$errorHandler = function (HttpKernel\Exception\FlattenException $exception) {
+  $msg = 'Something went wrong! ('.$exception->getMessage().')';
+ 
+  return new Response($msg, $exception->getStatusCode());
+};
+$dispatcher->addSubscriber(new HttpKernel\EventListener\ExceptionListener($errorHandler));
+
+// Example of adding a listener that will run Response::prepare() before the response is sent:
+//$dispatcher->addSubscriber(new HttpKernel\EventListener\ResponseListener('UTF-8'));
+
+// Example of adding support for a streamed response:
+//$dispatcher->addSubscriber(new HttpKernel\EventListener\StreamedResponseListener());
+ 
+$framework = new Simplex\Framework($dispatcher, $resolver);
+ 
+$response = $framework->handle($request);
+$response->send();

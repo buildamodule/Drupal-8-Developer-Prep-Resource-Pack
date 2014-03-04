@@ -1,0 +1,3 @@
+* Create folder called src/pages
+* Move bye.php to src/pages
+* Move hello.php (which used to be index.php) to src/pages

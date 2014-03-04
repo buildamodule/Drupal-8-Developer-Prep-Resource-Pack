@@ -1,0 +1,100 @@
+<?php
+
+/**
+ * @file
+ * Install and update functions for the Statistics module.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function statistics_uninstall() {
+  // Remove states.
+  Drupal::state()->delete('statistics.node_counter_scale');
+  Drupal::state()->delete('statistics.day_timestamp');
+}
+
+/**
+ * Implements hook_schema().
+ */
+function statistics_schema() {
+  $schema['node_counter'] = array(
+    'description' => 'Access statistics for {node}s.',
+    'fields' => array(
+      'nid' => array(
+        'description' => 'The {node}.nid for these statistics.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'totalcount' => array(
+        'description' => 'The total number of times the {node} has been viewed.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'big',
+      ),
+      'daycount' => array(
+        'description' => 'The total number of times the {node} has been viewed today.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'medium',
+      ),
+      'timestamp' => array(
+        'description' => 'The most recent time the {node} has been viewed.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('nid'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Moves statistics settings from variables to config.
+ *
+ * @ingroup config_upgrade
+ */
+function statistics_update_8000() {
+  update_variables_to_config('statistics.settings', array(
+    'statistics_count_content_views' => 'count_content_views',
+    'statistics_block_top_day_num' => 'block.popular.top_day_limit',
+    'statistics_block_top_all_num' => 'block.popular.top_all_limit',
+    'statistics_block_top_last_num' => 'block.popular.top_recent_limit',
+  ));
+}
+
+/**
+ * Make *id fields unsigned.
+ */
+function statistics_update_8001() {
+  db_drop_primary_key('node_counter');
+  db_change_field('node_counter', 'nid', 'nid',
+    array(
+      'description' => 'The {node}.nid for these statistics.',
+      'type' => 'int',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+      'default' => 0,
+    ),
+    array('primary key' => array('nid'))
+  );
+}
+
+/**
+ * Convert variables to state.
+ */
+function statistics_update_8002() {
+  update_variables_to_state(array(
+    'node_cron_views_scale' => 'statistics.node_counter_scale',
+    'statistics_day_timestamp' => 'statistics.day_timestamp',
+  ));
+}
