@@ -43,5 +43,16 @@ class Blindd8Controller extends ControllerBase
     $blindd8ingservice = \Drupal::service('blindd8.blindd8ingservice');
     $tagline = $blindd8ingservice->getTagline();
 
+    // Let's create a subrequest
+    $request = \Drupal::service('request');
+    $subrequest = Request::create($request->getBaseUrl() . '/admin', 'GET', array(), $request->cookies->all(), array(), $request->server->all());
+    $response = \Drupal::service('http_kernel')->handle($subrequest, HttpKernelInterface::SUB_REQUEST);
+
+    // Send it forth!
+    $output = array(
+      '#markup' => $response->getContent(),
+    );
+    return $output;
+
   }
 }
