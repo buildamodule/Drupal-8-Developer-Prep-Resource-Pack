@@ -1,5 +1,0 @@
-menu_test_local_action4:
- route_name: menu_test_local_action3
- title: 'My YAML discovery action'
- appears_on:
-   - menu_test_local_action1

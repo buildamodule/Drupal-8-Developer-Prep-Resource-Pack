@@ -1,6 +1,0 @@
-field_list:
-  pattern: 'admin/reports/fields'
-  defaults:
-    _entity_list: 'field_entity'
-  requirements:
-    _permission: 'administer content types'

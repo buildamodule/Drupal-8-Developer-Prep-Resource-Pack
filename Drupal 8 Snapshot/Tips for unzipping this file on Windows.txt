@@ -1,0 +1,6 @@
+TIPS FOR UN-ZIPPING ON WINDOWS
+--------------------------------------------------------
+
+In the Drupal 8 Dev Prep videos, this drupal folder is uncompressed. However, our viewers with Windows machines had a hard time with the long file names deep in the Drupal directory structures, so we opted to zip this separately after the videos were made.
+
+For best results, copy the drupal.zip file to the root directory of your hard drive (i.e. C:\) to uncompress it.
