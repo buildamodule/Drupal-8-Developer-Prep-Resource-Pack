@@ -1,0 +1,5 @@
+name: Blind D8
+type: module
+description: 'A module to house our initial meeting with the D8 APIs.'
+package: BuildAModule
+core: 8.x

@@ -1,0 +1,8 @@
+name: Trails
+description: Stores a trail of previously visited pages.
+package: BuildAModule
+core: 8.x
+configure: trails.settings
+dependencies:
+  - block
+type: module

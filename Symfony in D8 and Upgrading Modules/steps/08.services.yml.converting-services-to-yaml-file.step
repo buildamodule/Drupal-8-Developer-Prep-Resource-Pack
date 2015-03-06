@@ -1,0 +1,32 @@
+parameters:
+  charset: 'UTF-8'
+
+services: 
+  context:
+    class: Symfony\Component\Routing\RequestContext
+  matcher:
+    class: Symfony\Component\Routing\Matcher\UrlMatcher
+    arguments: [%routes%, @context]
+  resolver:
+    class: Symfony\Component\HttpKernel\Controller\ControllerResolver
+  listener.router:
+    class: Symfony\Component\HttpKernel\EventListener\RouterListener
+    arguments: [@matcher]
+  listener.response:
+    class: Symfony\Component\HttpKernel\EventListener\ResponseListener
+    arguments: [%charset%]
+  listener.exception:
+    class: Symfony\Component\HttpKernel\EventListener\ExceptionListener
+    arguments: [Calendar\\Controller\\ErrorController::exceptionAction]
+  listener.string_response:
+    class: Simplex\StringResponseListener
+  dispatcher:
+    class: Symfony\Component\EventDispatcher\EventDispatcher
+    calls:
+      - [addSubscriber, ['@listener.router']]
+      - [addSubscriber, ['@listener.response']]
+      - [addSubscriber, ['@listener.exception']]
+      - [addSubscriber, ['@listener.string_response']]
+  framework:
+    class: Simplex\Framework
+    arguments: [@dispatcher, @resolver]

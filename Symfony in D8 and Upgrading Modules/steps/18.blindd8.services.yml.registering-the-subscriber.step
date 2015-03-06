@@ -1,0 +1,7 @@
+services:
+  blindd8.blindd8ingservice:
+    class: Drupal\blindd8\BlindD8ingService
+  blindd8.blindd8subscriber:
+    class: Drupal\blindd8\BlindD8Subscriber
+    tags:
+      - { name: event_subscriber }

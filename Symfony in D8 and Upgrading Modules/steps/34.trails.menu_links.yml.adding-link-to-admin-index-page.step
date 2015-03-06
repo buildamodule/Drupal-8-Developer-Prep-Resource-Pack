@@ -1,0 +1,5 @@
+trails.settings:
+  title: 'Trails'
+  parent: user.admin_index
+  route_name: trails.settings
+  description: 'Configure the Trails module.'

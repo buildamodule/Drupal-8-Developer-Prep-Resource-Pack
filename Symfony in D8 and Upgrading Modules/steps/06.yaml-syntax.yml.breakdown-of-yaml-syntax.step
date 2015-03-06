@@ -1,0 +1,59 @@
+# Start comments with a hash sign.
+# This document contains various examples of how to structure
+# values in a YAML file.
+
+array_without_keys:
+  - one
+  - two
+  - three
+
+inline_array_without_keys: [one, two, three]
+
+KeysCanBeCamelCase: SoCanValues
+
+Spaces are fine in keys    : Values can have spaces, too
+
+"  Spaces at the beginning or end need quotes  ": 'You can use single or double quotes'
+
+"Use double quotes for \n new lines": 'Use two single quotes '' for a quote in a single quote'
+
+Types:
+  Boolean: true
+  Integer: 10
+  "Null": null # Hey, a comment! Need quotes for the word 'Null'
+  Float: 1.3
+  Hexidecimal: 0xC
+  Date: 2020-06-06
+  Full date uses ISO-8601 standard: 2001-12-14t21:59:43.10-05:00
+
+Arrays can have keys and use any number of spaces (but not tabs):
+  One:     1
+  Two:     2
+  Three:   3
+
+Inline array with keys: {one: 1, two: 2, three: 3}
+
+And oh my we can nest:
+  Heron:
+    - Tall
+    - Beautiful
+    - Loud (just come up behind one to find out)
+  Swallow:
+    European:
+      - Brown
+      - Quick
+    Asian: [Brown,Quick]
+
+We can do inline nesting as well:
+  - [An array, [with, an, array, inside]]
+  - [Another array, [with, an, array, inside]]
+
+White space preserver: |
+  The pipe is like a heredoc, where
+    you can output    anything you'd like! Go white space!
+  But you do have to indent.
+
+Multi-lined text: >
+  And the angled bracket
+  lets you bring a multi-lined string
+  into one line.

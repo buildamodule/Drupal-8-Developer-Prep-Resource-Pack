@@ -1,0 +1,3 @@
+services:
+  blindd8.blindd8ingservice:
+    class: Drupal\blindd8\BlindD8ingService

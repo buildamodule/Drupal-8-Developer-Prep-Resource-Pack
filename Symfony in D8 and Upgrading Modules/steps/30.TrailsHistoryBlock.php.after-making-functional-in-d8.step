@@ -1,0 +1,60 @@
+<?php
+
+/**
+ * @file
+ * Contains \Drupal\system\Plugin\Block\SystemPoweredByBlock.
+ */
+
+namespace Drupal\trails\Plugin\Block;
+
+use Drupal\block\BlockBase;
+use Drupal\Core\Cache\Cache;
+
+/**
+ * Provides a 'Powered by Drupal' block.
+ *
+ * @Block(
+ *   id = "trails_history_block",
+ *   admin_label = @Translation("Trails History")
+ * )
+ */
+class TrailsHistoryBlock extends BlockBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  public function build() {
+
+    // Create list of previous paths.
+
+    // Grab the trail history from a variable
+    //$trail = variable_get('trails_history', array());
+    $trail = \Drupal::state()->get('trails.trail') ?: array();
+
+    // Flip the saved array to show newest pages first.
+    $reverse_trail = array_reverse($trail);
+
+    // Grab the number of items to display
+    //$num_items = variable_get('trails_block_num', '5');
+    $num_items = \Drupal::state()->get('trails.num_items') ?: 5;
+
+    // Output the latest items as a list
+    $output = ''; // Initialize variable, this was added after the video was created.
+    for ($i = 0; $i < $num_items; $i++) {
+      if (isset($reverse_trail[$i])) {
+        $item = $reverse_trail[$i];
+        $output .= '<li>' . l($item['title'], $item['path']) . ' - ' . \Drupal::service('date')->formatInterval(REQUEST_TIME - $item['timestamp']) . ' ' . t('ago') . '</li>';
+      }
+    }
+    if (isset($output)) {
+      $output = '
+            <p>' . t('Below are the last !num pages you have visited.', array('!num' => $num_items)) . '</p>
+            <ul>' . $output . '</ul>
+          ';
+    }
+
+    return array('#markup' => $output);
+  }
+
+
+}

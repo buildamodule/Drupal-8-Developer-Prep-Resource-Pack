@@ -1,0 +1,7 @@
+blindd8.page:
+  path: 'blindd8'
+  defaults:
+    _content: 'Drupal\blindd8\Controller\Blindd8Controller::content'
+    _title: 'Welcome to your example page'
+  requirements:
+    _permission: 'access content'
